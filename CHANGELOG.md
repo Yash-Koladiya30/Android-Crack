@@ -1,5 +1,23 @@
 # Changelog
 
+## 0.8.0 — Phase 8a (license + cross-OS) (unreleased)
+
+- **License:** MIT → GPL-3.0-or-later. LICENSE stub now ships a
+  copyright header + SPDX identifier; release maintainer must populate
+  full GPL-3.0 text from FSF:
+  `curl -fsSL https://www.gnu.org/licenses/gpl-3.0.txt -o LICENSE`
+- `core/settings.py`: Windows-aware config + data dirs
+  (`%APPDATA%\Android-Crack\`, `%LOCALAPPDATA%\Android-Crack\`).
+  Linux / macOS / Termux keep XDG paths.
+- `install.sh`: auto-detects Ubuntu / Debian / Mint / Kali / Parrot /
+  Fedora / Arch / Manjaro / Termux / macOS and installs adb, scrcpy,
+  nmap, metasploit-framework, Python via the native package manager.
+  Subset selection via `--components` and `--interactive`.
+- `install.ps1`: Windows 11 winget-first (choco fallback) installer.
+  Requires elevated PowerShell. Same `-Components` / `-Interactive`.
+- README rewritten with compatibility table, per-OS install steps,
+  Docker, source dev workflow, and config-dir cheatsheet.
+
 ## 0.7.0 — Phase 7 (unreleased)
 
 - `core/plugin_loader.py`: discover via `android_crack.plugins`

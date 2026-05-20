@@ -2,18 +2,39 @@ from __future__ import annotations
 
 import json
 import os
+import sys
 from pathlib import Path
 
 from pydantic import BaseModel, Field
 
 
+def _is_windows() -> bool:
+    return sys.platform == "win32" or os.name == "nt"
+
+
 def _config_dir() -> Path:
+    if _is_windows():
+        # Windows: %APPDATA%\Android-Crack
+        base = os.environ.get("APPDATA")
+        if base:
+            return Path(base) / "Android-Crack"
+        return Path.home() / "AppData" / "Roaming" / "Android-Crack"
+
+    # Linux / macOS / Termux: XDG
     xdg = os.environ.get("XDG_CONFIG_HOME")
     base = Path(xdg) if xdg else Path.home() / ".config"
     return base / "android-crack"
 
 
 def _data_dir() -> Path:
+    if _is_windows():
+        # Windows: %LOCALAPPDATA%\Android-Crack
+        base = os.environ.get("LOCALAPPDATA")
+        if base:
+            return Path(base) / "Android-Crack"
+        return Path.home() / "AppData" / "Local" / "Android-Crack"
+
+    # Linux / macOS / Termux: XDG
     xdg = os.environ.get("XDG_DATA_HOME")
     base = Path(xdg) if xdg else Path.home() / ".local" / "share"
     return base / "android-crack"

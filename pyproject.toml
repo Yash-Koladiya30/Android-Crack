@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "android-crack"
-version = "0.7.0"
+version = "0.8.0"
 description = "Android pen-test toolkit over ADB and Metasploit-Framework"
 readme = "README.md"
 requires-python = ">=3.11"
@@ -15,7 +15,7 @@ classifiers = [
     "Development Status :: 3 - Alpha",
     "Environment :: Console",
     "Intended Audience :: Information Technology",
-    "License :: OSI Approved :: MIT License",
+    "License :: OSI Approved :: GNU General Public License v3 or later (GPLv3+)",
     "Operating System :: POSIX :: Linux",
     "Operating System :: MacOS",
     "Operating System :: Microsoft :: Windows",
