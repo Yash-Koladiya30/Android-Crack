@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.9.0 — Phase 8b (feature gap-fill) (unreleased)
+
+Closes the functional gaps flagged in the v0.7.0 self-review.
+
+- `cap_media.mirror` / `media mirror` — scrcpy screen mirroring with
+  `-m`, `-b`, `--max-fps`, `--serial` passthrough.
+- `cap_media.stream_audio` / `media audio stream mic|device` — live
+  audio over scrcpy (Android 11+).
+- `cap_media.record_audio` / `media audio record mic|device` — record
+  to `.opus`; `--play` to monitor live while recording.
+- `capabilities/comms.py` + `comms` group:
+  - `comms sms NUMBER MESSAGE` — `service call isms 5` parcel.
+    BETA, varies per Android version.
+  - `comms open URL` — `am start -a android.intent.action.VIEW`.
+    Scheme allow-list: http/https/tel/mailto/geo/intent.
+- `keycodes` — interactive REPL with 19 named keycodes from public
+  Android KeyEvent constants; `t TEXT` to type, `k CODE` for arbitrary
+  keycodes, `q` to quit.
+- Tests: phone/URL validators, send_sms / open_link bad-input rejection,
+  media surface presence, phase-8b CLI registration.
+
 ## 0.8.0 — Phase 8a (license + cross-OS) (unreleased)
 
 - **License:** MIT → GPL-3.0-or-later. LICENSE stub now ships a

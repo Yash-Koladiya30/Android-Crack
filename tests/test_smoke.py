@@ -6,10 +6,12 @@ from pathlib import Path
 import pytest
 
 from android_crack.capabilities import apps as cap_apps
+from android_crack.capabilities import comms as cap_comms
 from android_crack.capabilities import diagnostics as cap_diag
 from android_crack.capabilities import exploit as cap_exploit
 from android_crack.capabilities import exports as cap_exports
 from android_crack.capabilities import files as cap_files
+from android_crack.capabilities import media as cap_media
 from android_crack.capabilities import network as cap_net
 from android_crack.capabilities import wifi as cap_wifi
 from android_crack.core.settings import Settings
@@ -232,6 +234,61 @@ def test_plugin_loader_skips_underscore_files(tmp_path: Path) -> None:
     )
     results = load_plugins(typer.Typer(), Console(), tmp_path)
     assert all(r.name != "_helper" for r in results)
+
+
+def test_cli_help_lists_phase8b_groups() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    for entry in ("media", "comms", "keycodes"):
+        assert entry in result.stdout
+
+
+def test_comms_phone_validator() -> None:
+    assert cap_comms.is_plausible_phone("+14155550199")
+    assert cap_comms.is_plausible_phone("+91 99999 99999")
+    assert cap_comms.is_plausible_phone("9999999999")
+    assert not cap_comms.is_plausible_phone("")
+    assert not cap_comms.is_plausible_phone("hello")
+    assert not cap_comms.is_plausible_phone("abc123")
+
+
+def test_comms_url_validator() -> None:
+    assert cap_comms.is_plausible_url("https://example.com")
+    assert cap_comms.is_plausible_url("http://x.test")
+    assert cap_comms.is_plausible_url("tel:+14155550199")
+    assert cap_comms.is_plausible_url("mailto:a@b.com")
+    assert not cap_comms.is_plausible_url("javascript:alert(1)")
+    assert not cap_comms.is_plausible_url("/relative/path")
+    assert not cap_comms.is_plausible_url("")
+
+
+async def test_comms_send_sms_rejects_bad_input() -> None:
+    class _DummyClient:
+        async def shell(self, *_a, **_k):  # pragma: no cover - never reached
+            raise AssertionError("should not be called")
+
+    with pytest.raises(ValueError):
+        await cap_comms.send_sms(_DummyClient(), "ser", "not-a-phone", "hi")  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        await cap_comms.send_sms(_DummyClient(), "ser", "+14155550199", "")  # type: ignore[arg-type]
+
+
+async def test_comms_open_link_rejects_bad_scheme() -> None:
+    class _DummyClient:
+        async def shell(self, *_a, **_k):  # pragma: no cover
+            raise AssertionError("should not be called")
+
+    with pytest.raises(ValueError):
+        await cap_comms.open_link(_DummyClient(), "ser", "ftp://x")  # type: ignore[arg-type]
+    with pytest.raises(ValueError):
+        await cap_comms.open_link(_DummyClient(), "ser", "no-scheme")  # type: ignore[arg-type]
+
+
+def test_media_scrcpy_helpers_exist() -> None:
+    assert callable(cap_media.mirror)
+    assert callable(cap_media.stream_audio)
+    assert callable(cap_media.record_audio)
 
 
 def test_phase3_capability_surface() -> None:

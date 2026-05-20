@@ -11,6 +11,7 @@ import subprocess as _subprocess
 from rich.panel import Panel
 
 from android_crack.capabilities import apps as cap_apps
+from android_crack.capabilities import comms as cap_comms
 from android_crack.capabilities import connect as cap_connect
 from android_crack.capabilities import diagnostics as cap_diag
 from android_crack.capabilities import exploit as cap_exploit
@@ -1390,3 +1391,238 @@ def audit_clear(
     log = AuditLog(settings.audit_db)
     removed = log.clear()
     console.print(f"[ok]Deleted {removed} event(s).[/ok]")
+
+
+# ---------------------------------------------------------------------------
+# media subcommand group — scrcpy mirror + audio
+# ---------------------------------------------------------------------------
+
+media_app = typer.Typer(help="scrcpy-backed mirroring + audio capture.")
+app.add_typer(media_app, name="media")
+
+audio_app = typer.Typer(help="Audio stream / record (Android 11+).")
+media_app.add_typer(audio_app, name="audio")
+
+
+def _require_scrcpy() -> str:
+    tools = locate_tools()
+    if not tools.scrcpy:
+        console.print("[err]scrcpy not found on PATH.[/err]")
+        raise typer.Exit(code=2)
+    return tools.scrcpy
+
+
+def _resolve_serial_only(settings: Settings, serial: str | None) -> str:
+    _, target = _resolve_target(settings, serial)
+    return target
+
+
+@media_app.command("mirror")
+def media_mirror(
+    ctx: typer.Context,
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+    max_size: int | None = typer.Option(None, "-m", "--max-size"),
+    bitrate: float | None = typer.Option(None, "-b", "--bitrate-mbps"),
+    fps: int | None = typer.Option(None, "--max-fps"),
+) -> None:
+    """Mirror + control the device with scrcpy. Blocks until you close."""
+    scrcpy_path = _require_scrcpy()
+    target = _resolve_serial_only(ctx.obj, serial)
+    code = cap_media.mirror(
+        scrcpy_path,
+        serial=target,
+        max_size=max_size,
+        bitrate_mbps=bitrate,
+        max_fps=fps,
+    )
+    raise typer.Exit(code=code)
+
+
+@audio_app.command("stream")
+def audio_stream(
+    ctx: typer.Context,
+    source: str = typer.Argument("device", help="mic | device"),
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+) -> None:
+    """Live audio stream via scrcpy (no video). Android 11+."""
+    if source not in {"mic", "device"}:
+        console.print("[err]source must be 'mic' or 'device'[/err]")
+        raise typer.Exit(code=2)
+    scrcpy_path = _require_scrcpy()
+    target = _resolve_serial_only(ctx.obj, serial)
+    code = cap_media.stream_audio(scrcpy_path, source, serial=target)  # type: ignore[arg-type]
+    raise typer.Exit(code=code)
+
+
+@audio_app.command("record")
+def audio_record(
+    ctx: typer.Context,
+    source: str = typer.Argument("device", help="mic | device"),
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+    out: Path | None = typer.Option(None, "--out"),
+    play: bool = typer.Option(False, "--play", help="Play locally while recording"),
+) -> None:
+    """Record audio to a file via scrcpy. Android 11+."""
+    if source not in {"mic", "device"}:
+        console.print("[err]source must be 'mic' or 'device'[/err]")
+        raise typer.Exit(code=2)
+    scrcpy_path = _require_scrcpy()
+    settings: Settings = ctx.obj
+    target = _resolve_serial_only(settings, serial)
+
+    if out is None:
+        settings.ensure_dirs()
+        from datetime import datetime
+        stamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        name = f"audio-{source}-{target.replace(':', '_')}-{stamp}.opus"
+        out = settings.captures_dir / name
+
+    console.print(f"[muted]Ctrl-C to stop. Saving to {out}[/muted]")
+    code = cap_media.record_audio(
+        scrcpy_path,
+        source,  # type: ignore[arg-type]
+        out,
+        serial=target,
+        play_while_recording=play,
+    )
+    if code == 0:
+        console.print(f"[ok]Saved:[/ok] {out}")
+    raise typer.Exit(code=code)
+
+
+# ---------------------------------------------------------------------------
+# comms subcommand group — SMS / open link
+# ---------------------------------------------------------------------------
+
+comms_app = typer.Typer(help="Telephony + intent helpers (SMS, open URL).")
+app.add_typer(comms_app, name="comms")
+
+
+@comms_app.command("sms")
+def comms_sms(
+    ctx: typer.Context,
+    number: str = typer.Argument(..., help="E.164 phone (e.g. +14155550199)"),
+    message: str = typer.Argument(...),
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+    yes: bool = typer.Option(False, "--yes", "-y"),
+) -> None:
+    """Send an SMS. BETA — varies by Android version / OEM."""
+    if not yes and not typer.confirm(
+        f"Send SMS to {number}? Carrier may bill the device."
+    ):
+        raise typer.Exit(code=0)
+    pool, target = _resolve_target(ctx.obj, serial)
+    try:
+        result = asyncio.run(cap_comms.send_sms(pool.client, target, number, message))
+    except ValueError as e:
+        console.print(f"[err]{e}[/err]")
+        raise typer.Exit(code=2) from e
+    _print_result_line(result, success_label=f"SMS dispatched to {number}")
+
+
+@comms_app.command("open")
+def comms_open(
+    ctx: typer.Context,
+    url: str = typer.Argument(..., help="https://, http://, tel:, mailto:, geo:, intent:"),
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+) -> None:
+    """Open a URL on the device via the default VIEW intent."""
+    pool, target = _resolve_target(ctx.obj, serial)
+    try:
+        result = asyncio.run(cap_comms.open_link(pool.client, target, url))
+    except ValueError as e:
+        console.print(f"[err]{e}[/err]")
+        raise typer.Exit(code=2) from e
+    _print_result_line(result, success_label=f"Opened {url}")
+
+
+# ---------------------------------------------------------------------------
+# keycodes — interactive REPL for one-off keyevent sends
+# ---------------------------------------------------------------------------
+
+_KEY_MAP: dict[str, tuple[str, str]] = {
+    "1":  ("HOME",            "3"),
+    "2":  ("BACK",            "4"),
+    "3":  ("RECENT_APPS",     "187"),
+    "4":  ("POWER",           "26"),
+    "5":  ("ENTER",           "66"),
+    "6":  ("DEL",             "67"),
+    "7":  ("ESC",             "111"),
+    "8":  ("TAB",             "61"),
+    "9":  ("VOL_UP",          "24"),
+    "10": ("VOL_DOWN",        "25"),
+    "11": ("DPAD_UP",         "19"),
+    "12": ("DPAD_DOWN",       "20"),
+    "13": ("DPAD_LEFT",       "21"),
+    "14": ("DPAD_RIGHT",      "22"),
+    "15": ("MEDIA_PLAY",      "126"),
+    "16": ("MEDIA_PAUSE",     "127"),
+    "17": ("CAMERA",          "27"),
+    "18": ("BRIGHTNESS_UP",   "221"),
+    "19": ("BRIGHTNESS_DOWN", "220"),
+}
+
+
+def _render_keycode_menu() -> None:
+    table = Table(title="Keycodes", header_style="accent")
+    table.add_column("#", style="muted", justify="right")
+    table.add_column("Name", style="brand")
+    table.add_column("Code", style="ok", justify="right")
+    for idx, (label, code) in _KEY_MAP.items():
+        table.add_row(idx, label, code)
+    console.print(table)
+    console.print(
+        "[muted]Type number to send. Or:  t TEXT  to type text.  "
+        "k CODE  for any numeric keycode.  q to quit.[/muted]"
+    )
+
+
+@app.command("keycodes")
+def keycodes_cmd(
+    ctx: typer.Context,
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+) -> None:
+    """Interactive keycode / text sender."""
+    pool, target = _resolve_target(ctx.obj, serial)
+    _render_keycode_menu()
+
+    while True:
+        try:
+            choice = console.input("[prompt]keycode>[/prompt] ").strip()
+        except (EOFError, KeyboardInterrupt):
+            console.print()
+            return
+        if not choice or choice == "q":
+            return
+        if choice == "?":
+            _render_keycode_menu()
+            continue
+
+        parts = choice.split(maxsplit=1)
+        head = parts[0].lower()
+
+        if head == "t":
+            if len(parts) != 2 or not parts[1]:
+                console.print("[err]usage: t TEXT[/err]")
+                continue
+            result = asyncio.run(cap_shell.send_text(pool.client, target, parts[1]))
+            _print_result_line(result, success_label=f"typed {parts[1]!r}")
+            continue
+
+        if head == "k":
+            if len(parts) != 2 or not parts[1].isdigit():
+                console.print("[err]usage: k NUMERIC_CODE[/err]")
+                continue
+            result = asyncio.run(
+                cap_shell.send_keycode(pool.client, target, int(parts[1]))
+            )
+            _print_result_line(result, success_label=f"keycode {parts[1]} sent")
+            continue
+
+        if choice in _KEY_MAP:
+            label, code = _KEY_MAP[choice]
+            result = asyncio.run(cap_shell.send_keycode(pool.client, target, int(code)))
+            _print_result_line(result, success_label=f"{label} ({code}) sent")
+            continue
+
+        console.print("[err]Unknown. ? menu  q quit[/err]")
