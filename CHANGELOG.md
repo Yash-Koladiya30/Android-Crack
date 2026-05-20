@@ -1,5 +1,26 @@
 # Changelog
 
+## 0.10.0 — Phase 8c (device-power gap-fill) (unreleased)
+
+Closes remaining feature gaps:
+
+- `capabilities/device.py`:
+  - `reboot(target=system|recovery|bootloader|fastboot)`
+  - `power_off` — `adb shell reboot -p`
+  - `lock_device` — power keyevent
+  - `unlock_device(pin=None)` — wake + swipe-up + optional PIN entry
+  - `push_and_open_media(kind=photo|audio|video, local_path)` —
+    push to /sdcard/ + `am start -a VIEW` with mime type
+- `cap_exports.stream_logcat` — synchronous live logcat attached to TTY.
+- Top-level CLI commands:
+  - `reboot [TARGET] [-y]`
+  - `power-off [-y]`
+  - `lock` / `unlock --pin`
+- `media play photo|audio|video FILE` — push + open
+- `export logcat-follow [--filter SPEC]` — live stream
+- `connect kill-server` / `connect start-server`
+- Tests: device capability surface + CLI registration of all new groups.
+
 ## 0.9.0 — Phase 8b (feature gap-fill) (unreleased)
 
 Closes the functional gaps flagged in the v0.7.0 self-review.

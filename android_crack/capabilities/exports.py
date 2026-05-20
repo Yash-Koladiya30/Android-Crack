@@ -60,3 +60,17 @@ async def save_logcat(
     result = await client.run(args, serial=serial)
     local.write_text(result.stdout + result.stderr, encoding="utf-8", errors="replace")
     return local
+
+
+def stream_logcat(adb_path: str, serial: str, *, filter_spec: str | None = None) -> int:
+    """Stream `adb logcat -v time` to the operator TTY. Blocks until Ctrl+C.
+
+    Returns the adb process exit code. Synchronous on purpose so the
+    TTY is attached directly to the operator's terminal.
+    """
+    import subprocess
+
+    cmd = [adb_path, "-s", serial, "logcat", "-v", "time"]
+    if filter_spec:
+        cmd.append(filter_spec)
+    return subprocess.call(cmd)

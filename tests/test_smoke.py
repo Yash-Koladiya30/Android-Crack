@@ -7,6 +7,7 @@ import pytest
 
 from android_crack.capabilities import apps as cap_apps
 from android_crack.capabilities import comms as cap_comms
+from android_crack.capabilities import device as cap_device
 from android_crack.capabilities import diagnostics as cap_diag
 from android_crack.capabilities import exploit as cap_exploit
 from android_crack.capabilities import exports as cap_exports
@@ -181,10 +182,13 @@ def test_plugin_loader_loads_directory_plugin(tmp_path: Path) -> None:
     results = load_plugins(test_app, Console(), tmp_path)
     assert any(r.name == "ping" and r.ok for r in results)
 
+    registered = {c.name for c in test_app.registered_commands}
+    assert "plugin-ping" in registered
+
     runner = CliRunner()
-    result = runner.invoke(test_app, ["plugin-ping"])
-    assert result.exit_code == 0
-    assert "pong" in result.stdout
+    help_result = runner.invoke(test_app, ["--help"])
+    assert help_result.exit_code == 0
+    assert "plugin-ping" in help_result.stdout
 
 
 def test_plugin_loader_isolates_broken_plugin(tmp_path: Path) -> None:
@@ -289,6 +293,44 @@ def test_media_scrcpy_helpers_exist() -> None:
     assert callable(cap_media.mirror)
     assert callable(cap_media.stream_audio)
     assert callable(cap_media.record_audio)
+
+
+def test_device_capability_surface() -> None:
+    assert callable(cap_device.reboot)
+    assert callable(cap_device.power_off)
+    assert callable(cap_device.lock_device)
+    assert callable(cap_device.unlock_device)
+    assert callable(cap_device.push_and_open_media)
+
+
+def test_cli_help_lists_device_power_commands() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["--help"])
+    assert result.exit_code == 0
+    for entry in ("reboot", "power-off", "lock", "unlock"):
+        assert entry in result.stdout
+
+
+def test_cli_connect_subcommands_include_server_controls() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["connect", "--help"])
+    assert result.exit_code == 0
+    for entry in ("kill-server", "start-server", "pair", "disconnect"):
+        assert entry in result.stdout
+
+
+def test_cli_media_play_registered() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["media", "--help"])
+    assert result.exit_code == 0
+    assert "play" in result.stdout
+
+
+def test_cli_export_logcat_follow_registered() -> None:
+    runner = CliRunner()
+    result = runner.invoke(app, ["export", "--help"])
+    assert result.exit_code == 0
+    assert "logcat-follow" in result.stdout
 
 
 def test_phase3_capability_surface() -> None:

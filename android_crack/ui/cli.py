@@ -13,6 +13,7 @@ from rich.panel import Panel
 from android_crack.capabilities import apps as cap_apps
 from android_crack.capabilities import comms as cap_comms
 from android_crack.capabilities import connect as cap_connect
+from android_crack.capabilities import device as cap_device
 from android_crack.capabilities import diagnostics as cap_diag
 from android_crack.capabilities import exploit as cap_exploit
 from android_crack.capabilities import exports as cap_exports
@@ -308,7 +309,7 @@ def serve_cmd(
     host: str = typer.Option("127.0.0.1", "--host", help="Bind address"),
     port: int = typer.Option(8080, "--port", help="TCP port"),
 ) -> None:
-    """Run the REST API (uvicorn). Install api extra: pip install 'android-crack[api]'."""
+    """Run the REST API (uvicorn). Needs the 'api' extra installed."""
     settings: Settings = ctx.obj
     _require_authorized(settings)
     if not _require_adb():
@@ -1626,3 +1627,145 @@ def keycodes_cmd(
             continue
 
         console.print("[err]Unknown. ? menu  q quit[/err]")
+
+
+# ---------------------------------------------------------------------------
+# device power: reboot / power-off / lock / unlock
+# ---------------------------------------------------------------------------
+
+@app.command("reboot")
+def reboot_cmd(
+    ctx: typer.Context,
+    target: str = typer.Argument(
+        "system",
+        help="system | recovery | bootloader | fastboot",
+    ),
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+    yes: bool = typer.Option(False, "--yes", "-y"),
+) -> None:
+    """Reboot the device. Default: normal restart."""
+    if target not in {"system", "recovery", "bootloader", "fastboot"}:
+        console.print("[err]target must be: system | recovery | bootloader | fastboot[/err]")
+        raise typer.Exit(code=2)
+    if not yes and not typer.confirm(
+        f"Reboot to [{target}]? Will drop ADB connection."
+    ):
+        raise typer.Exit(code=0)
+    pool, target_serial = _resolve_target(ctx.obj, serial)
+    result = asyncio.run(cap_device.reboot(pool.client, target_serial, target))  # type: ignore[arg-type]
+    _print_result_line(result, success_label=f"rebooting to {target}")
+
+
+@app.command("power-off")
+def power_off_cmd(
+    ctx: typer.Context,
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+    yes: bool = typer.Option(False, "--yes", "-y"),
+) -> None:
+    """Power the device off."""
+    if not yes and not typer.confirm(
+        "Power off the device? Will drop ADB connection until reboot."
+    ):
+        raise typer.Exit(code=0)
+    pool, target = _resolve_target(ctx.obj, serial)
+    result = asyncio.run(cap_device.power_off(pool.client, target))
+    _print_result_line(result, success_label="powering off")
+
+
+@app.command("lock")
+def lock_cmd(
+    ctx: typer.Context,
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+) -> None:
+    """Lock the screen (sends power keyevent)."""
+    pool, target = _resolve_target(ctx.obj, serial)
+    result = asyncio.run(cap_device.lock_device(pool.client, target))
+    _print_result_line(result, success_label="locked")
+
+
+@app.command("unlock")
+def unlock_cmd(
+    ctx: typer.Context,
+    pin: str = typer.Option(
+        "",
+        "--pin",
+        help="PIN/password if device is secured. Operator must know it.",
+    ),
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+) -> None:
+    """Wake screen, swipe up, enter PIN/password if provided."""
+    pool, target = _resolve_target(ctx.obj, serial)
+    asyncio.run(cap_device.unlock_device(pool.client, target, pin or None))
+    console.print("[ok]Unlock sequence sent.[/ok]")
+
+
+# ---------------------------------------------------------------------------
+# media play (push + open via VIEW intent)
+# ---------------------------------------------------------------------------
+
+@media_app.command("play")
+def media_play(
+    ctx: typer.Context,
+    kind: str = typer.Argument(..., help="photo | audio | video"),
+    local: Path = typer.Argument(..., exists=True, readable=True, dir_okay=False),
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+) -> None:
+    """Push a media file to /sdcard/ and open it on the device."""
+    if kind not in {"photo", "audio", "video"}:
+        console.print("[err]kind must be 'photo', 'audio', or 'video'[/err]")
+        raise typer.Exit(code=2)
+    pool, target = _resolve_target(ctx.obj, serial)
+    result = asyncio.run(
+        cap_device.push_and_open_media(pool.client, target, kind, str(local))  # type: ignore[arg-type]
+    )
+    _print_result_line(result, success_label=f"opened {local.name}")
+
+
+# ---------------------------------------------------------------------------
+# logcat follow (live stream)
+# ---------------------------------------------------------------------------
+
+@export_app.command("logcat-follow")
+def export_logcat_follow(
+    ctx: typer.Context,
+    serial: str | None = typer.Option(None, "--serial", "-s"),
+    filter_spec: str | None = typer.Option(None, "--filter", help="e.g. *:W or TAG:S"),
+) -> None:
+    """Stream live logcat. Ctrl-C to stop."""
+    settings: Settings = ctx.obj
+    _require_authorized(settings)
+    adb = _require_adb()
+    pool = _new_pool(adb)
+    asyncio.run(pool.refresh())
+    if serial:
+        pool.select(serial)
+    target = pool.require_active()
+    console.print(f"[muted]Streaming logcat for {target}. Ctrl-C to stop.[/muted]")
+    rc = cap_exports.stream_logcat(adb, target, filter_spec=filter_spec)
+    raise typer.Exit(code=rc)
+
+
+# ---------------------------------------------------------------------------
+# connect kill-server
+# ---------------------------------------------------------------------------
+
+@connect_app.command("kill-server")
+def connect_kill_server(ctx: typer.Context) -> None:
+    """Stop the ADB server (`adb kill-server`)."""
+    settings: Settings = ctx.obj
+    _require_authorized(settings)
+    adb = _require_adb()
+    client = AdbClient(adb)
+    result = asyncio.run(cap_connect.kill_server(client))
+    _print_result_line(result, success_label="ADB server stopped")
+
+
+@connect_app.command("start-server")
+def connect_start_server(ctx: typer.Context) -> None:
+    """Start the ADB server (`adb start-server`)."""
+    settings: Settings = ctx.obj
+    _require_authorized(settings)
+    adb = _require_adb()
+    client = AdbClient(adb)
+    result = asyncio.run(cap_connect.start_server(client))
+    _print_result_line(result, success_label="ADB server started")
