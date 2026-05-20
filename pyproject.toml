@@ -1,0 +1,71 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "android-crack"
+version = "0.7.0"
+description = "Android pen-test toolkit over ADB and Metasploit-Framework"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { file = "LICENSE" }
+authors = [{ name = "Yash Koladiya" }]
+keywords = ["android", "adb", "pentest", "security", "metasploit", "kali"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Environment :: Console",
+    "Intended Audience :: Information Technology",
+    "License :: OSI Approved :: MIT License",
+    "Operating System :: POSIX :: Linux",
+    "Operating System :: MacOS",
+    "Operating System :: Microsoft :: Windows",
+    "Programming Language :: Python :: 3.11",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Security",
+]
+dependencies = [
+    "typer>=0.12",
+    "rich>=13.7",
+    "textual>=0.65",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "python-nmap>=0.7.1",
+]
+
+[project.optional-dependencies]
+dev = [
+    "pytest>=8",
+    "pytest-asyncio>=0.23",
+    "ruff>=0.4",
+    "mypy>=1.10",
+]
+api = [
+    "fastapi>=0.111",
+    "uvicorn>=0.30",
+]
+
+[project.scripts]
+android-crack = "android_crack.app:main"
+acrack = "android_crack.app:main"
+
+[project.urls]
+Homepage = "https://github.com/Yash-Koladiya30/Android-Crack"
+Issues = "https://github.com/Yash-Koladiya30/Android-Crack/issues"
+
+[tool.hatch.build.targets.wheel]
+packages = ["android_crack"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B", "SIM", "RUF"]
+
+[tool.mypy]
+python_version = "3.11"
+strict = true
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
