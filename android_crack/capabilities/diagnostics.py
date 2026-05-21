@@ -6,7 +6,6 @@ from typing import Literal
 
 from android_crack.core.adb_client import AdbClient, AdbResult
 
-
 StayOn = Literal["usb", "on", "off"]
 
 
@@ -148,7 +147,8 @@ def _score_root(report: RootReport) -> None:
     if report.su_paths and "su" in report.su_paths:
         score += 1
         reasons.append("classic /system/*/su present")
-    if report.magisk_paths and ("magisk" in report.magisk_paths.lower() or "/data/adb" in report.magisk_paths):
+    mp = report.magisk_paths
+    if mp and ("magisk" in mp.lower() or "/data/adb" in mp):
         score += 3
         reasons.append("Magisk binary / /data/adb path present")
     if report.magisk_pkg and "package:" in report.magisk_pkg:

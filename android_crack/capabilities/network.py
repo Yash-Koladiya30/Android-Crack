@@ -1,9 +1,9 @@
 from __future__ import annotations
 
 import socket
-from dataclasses import dataclass, field
+from dataclasses import dataclass
 
-import nmap  # python-nmap
+import nmap  # type: ignore[import-untyped]  # python-nmap, no stubs
 
 from android_crack.core.adb_client import AdbClient, AdbResult
 
@@ -31,7 +31,7 @@ def local_lan_ip() -> str | None:
         sock = socket.socket(socket.AF_INET, socket.SOCK_DGRAM)
         sock.settimeout(2.0)
         sock.connect(("8.8.8.8", 80))
-        ip = sock.getsockname()[0]
+        ip = str(sock.getsockname()[0])
         sock.close()
         return ip
     except OSError:

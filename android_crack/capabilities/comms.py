@@ -20,7 +20,6 @@ from urllib.parse import urlparse
 
 from android_crack.core.adb_client import AdbClient, AdbResult
 
-
 _PHONE_RE = re.compile(r"^\+?[0-9 \-]{4,20}$")
 _URL_SCHEMES = ("http://", "https://", "tel:", "mailto:", "geo:", "intent:")
 

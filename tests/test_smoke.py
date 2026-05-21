@@ -1,10 +1,9 @@
-from typer.testing import CliRunner
-
-from android_crack import __version__
 from pathlib import Path
 
 import pytest
+from typer.testing import CliRunner
 
+from android_crack import __version__
 from android_crack.capabilities import apps as cap_apps
 from android_crack.capabilities import comms as cap_comms
 from android_crack.capabilities import device as cap_device

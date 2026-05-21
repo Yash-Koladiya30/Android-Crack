@@ -1,6 +1,5 @@
 from __future__ import annotations
 
-import asyncio
 import subprocess
 
 from android_crack.core.adb_client import AdbClient, AdbResult

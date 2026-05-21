@@ -55,7 +55,7 @@ class AdbClient:
             stdout, stderr = await asyncio.wait_for(
                 proc.communicate(), timeout=timeout or self._timeout
             )
-        except asyncio.TimeoutError:
+        except TimeoutError:
             proc.kill()
             await proc.wait()
             raise

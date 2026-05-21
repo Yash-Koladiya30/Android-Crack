@@ -24,10 +24,11 @@ import importlib.util
 import logging
 import sys
 import traceback
+from collections.abc import Callable
 from dataclasses import dataclass
 from importlib.metadata import entry_points
 from pathlib import Path
-from typing import TYPE_CHECKING, Callable, Protocol
+from typing import TYPE_CHECKING, Protocol, cast
 
 if TYPE_CHECKING:
     import typer
@@ -38,7 +39,7 @@ _logger = logging.getLogger("android_crack.plugins")
 
 
 class _Registrar(Protocol):
-    def __call__(self, app: "typer.Typer", console: "Console") -> None: ...
+    def __call__(self, app: typer.Typer, console: Console) -> None: ...
 
 
 @dataclass(slots=True)
@@ -53,21 +54,18 @@ class LoadedPlugin:
 
 
 def _collect_entry_points() -> list[tuple[str, Callable[..., None]]]:
+    # importlib.metadata.entry_points().select(...) is the canonical API
+    # since Python 3.10; we require >=3.11 in pyproject, so no fallback.
     out: list[tuple[str, Callable[..., None]]] = []
-    eps = entry_points()
-    selected = (
-        eps.select(group=ENTRY_POINT_GROUP)
-        if hasattr(eps, "select")
-        else eps.get(ENTRY_POINT_GROUP, [])  # type: ignore[attr-defined]
-    )
+    selected = entry_points().select(group=ENTRY_POINT_GROUP)
     for ep in selected:
         try:
             obj = ep.load()
-        except Exception as exc:  # noqa: BLE001
+        except Exception as exc:
             _logger.warning("Failed to load entry point %s: %s", ep.name, exc)
             continue
         if callable(obj):
-            out.append((ep.name, obj))
+            out.append((ep.name, cast(Callable[..., None], obj)))
     return out
 
 
@@ -81,11 +79,13 @@ def _load_dir_module(path: Path) -> Callable[..., None] | None:
     sys.modules[spec.name] = module
     try:
         spec.loader.exec_module(module)
-    except Exception as exc:  # noqa: BLE001
+    except Exception as exc:
         _logger.warning("Plugin %s failed to import: %s", path.name, exc)
         return None
     fn = getattr(module, "register", None)
-    return fn if callable(fn) else None
+    if not callable(fn):
+        return None
+    return fn  # type: ignore[no-any-return]
 
 
 def discover_plugins(plugins_dir: Path) -> list[tuple[str, str, Callable[..., None]]]:
@@ -99,15 +99,15 @@ def discover_plugins(plugins_dir: Path) -> list[tuple[str, str, Callable[..., No
         for file in sorted(plugins_dir.glob("*.py")):
             if file.name.startswith("_"):
                 continue
-            fn = _load_dir_module(file)
-            if fn is not None:
-                found.append((file.stem, f"dir:{file}", fn))
+            register_fn = _load_dir_module(file)
+            if register_fn is not None:
+                found.append((file.stem, f"dir:{file}", register_fn))
     return found
 
 
 def load_plugins(
-    app: "typer.Typer",
-    console: "Console",
+    app: typer.Typer,
+    console: Console,
     plugins_dir: Path,
 ) -> list[LoadedPlugin]:
     """Discover plugins, call each `register(app, console)`. Never raises."""
@@ -116,7 +116,7 @@ def load_plugins(
         try:
             fn(app, console)
             results.append(LoadedPlugin(name=name, source=source))
-        except Exception:  # noqa: BLE001
+        except Exception:
             tb = traceback.format_exc(limit=4)
             _logger.warning("Plugin %s register() raised:\n%s", name, tb)
             results.append(LoadedPlugin(name=name, source=source, error=tb))

@@ -5,7 +5,6 @@ from collections import OrderedDict
 
 from android_crack.core.adb_client import AdbClient, AdbResult
 
-
 # Patterns derived from the public AOSP `cmd wifi list-networks` /
 # `dumpsys wifi` output formats. SSID-only — no password material extracted.
 _SSID_PATTERNS: tuple[re.Pattern[str], ...] = (
@@ -35,9 +34,7 @@ def _is_plausible(ssid: str) -> bool:
         return False
     if s.lower() in _JUNK:
         return False
-    if re.match(r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$", s):
-        return False
-    return True
+    return not re.match(r"^([0-9A-Fa-f]{2}:){5}[0-9A-Fa-f]{2}$", s)
 
 
 def _ordered_unique(items: list[str]) -> list[str]:

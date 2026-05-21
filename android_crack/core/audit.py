@@ -17,10 +17,10 @@ import json
 import socket
 import sqlite3
 import time
+from collections.abc import AsyncIterator, Iterator
 from contextlib import asynccontextmanager, contextmanager
 from pathlib import Path
-from typing import Any, AsyncIterator, Iterator
-
+from typing import Any
 
 _SCHEMA = """
 CREATE TABLE IF NOT EXISTS events (
@@ -134,7 +134,7 @@ class AuditLog:
         capability: str,
         serial: str | None,
         args: dict[str, Any],
-    ) -> AsyncIterator["AuditScope"]:
+    ) -> AsyncIterator[AuditScope]:
         scope = AuditScope(capability=capability, serial=serial, args=args)
         scope._started = time.perf_counter()
         try:
@@ -164,7 +164,7 @@ class AuditLog:
 
 
 class AuditScope:
-    __slots__ = ("capability", "serial", "args", "exit_code", "stdout", "error", "_started")
+    __slots__ = ("_started", "args", "capability", "error", "exit_code", "serial", "stdout")
 
     def __init__(
         self,

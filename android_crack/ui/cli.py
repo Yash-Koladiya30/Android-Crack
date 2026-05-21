@@ -1,14 +1,12 @@
 from __future__ import annotations
 
 import asyncio
+import subprocess as _subprocess
 from pathlib import Path
 
 import typer
-from rich.table import Table
-
-import subprocess as _subprocess
-
 from rich.panel import Panel
+from rich.table import Table
 
 from android_crack.capabilities import apps as cap_apps
 from android_crack.capabilities import comms as cap_comms
@@ -900,7 +898,9 @@ def wifi_saved(
     pool, target = _resolve_target(ctx.obj, serial)
     ssids = asyncio.run(cap_wifi.saved_networks(pool.client, target))
     if not ssids:
-        console.print("[warn]No saved SSIDs detected. ROMs vary — try `wifi status` instead.[/warn]")
+        console.print(
+            "[warn]No saved SSIDs detected. ROMs vary — try `wifi status`.[/warn]"
+        )
         return
     table = Table(title="Saved Wi-Fi networks (SSID only)", header_style="accent")
     table.add_column("#", style="muted", justify="right")

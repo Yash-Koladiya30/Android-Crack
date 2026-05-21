@@ -14,30 +14,26 @@ def _is_windows() -> bool:
 
 def _config_dir() -> Path:
     if _is_windows():
-        # Windows: %APPDATA%\Android-Crack
-        base = os.environ.get("APPDATA")
-        if base:
-            return Path(base) / "Android-Crack"
+        appdata = os.environ.get("APPDATA")
+        if appdata:
+            return Path(appdata) / "Android-Crack"
         return Path.home() / "AppData" / "Roaming" / "Android-Crack"
 
-    # Linux / macOS / Termux: XDG
     xdg = os.environ.get("XDG_CONFIG_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".config"
-    return base / "android-crack"
+    xdg_root: Path = Path(xdg) if xdg else Path.home() / ".config"
+    return xdg_root / "android-crack"
 
 
 def _data_dir() -> Path:
     if _is_windows():
-        # Windows: %LOCALAPPDATA%\Android-Crack
-        base = os.environ.get("LOCALAPPDATA")
-        if base:
-            return Path(base) / "Android-Crack"
+        localappdata = os.environ.get("LOCALAPPDATA")
+        if localappdata:
+            return Path(localappdata) / "Android-Crack"
         return Path.home() / "AppData" / "Local" / "Android-Crack"
 
-    # Linux / macOS / Termux: XDG
     xdg = os.environ.get("XDG_DATA_HOME")
-    base = Path(xdg) if xdg else Path.home() / ".local" / "share"
-    return base / "android-crack"
+    xdg_root: Path = Path(xdg) if xdg else Path.home() / ".local" / "share"
+    return xdg_root / "android-crack"
 
 
 class Settings(BaseModel):

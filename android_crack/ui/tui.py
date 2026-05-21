@@ -30,7 +30,7 @@ class AndroidCrackTUI(App[None]):
     BINDINGS = [
         Binding("r", "refresh", "Refresh"),
         Binding("i", "info", "Info"),
-        Binding("p", "screenshot", "Screenshot"),
+        Binding("p", "capture", "Screenshot"),
         Binding("q", "quit", "Quit"),
     ]
 
@@ -90,7 +90,7 @@ class AndroidCrackTUI(App[None]):
             f"patch {info.security_patch or '—'}"
         )
 
-    async def action_screenshot(self) -> None:
+    async def action_capture(self) -> None:
         log = self.query_one("#log", RichLog)
         serial = self._selected_serial()
         if not serial:

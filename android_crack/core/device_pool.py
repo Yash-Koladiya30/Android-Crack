@@ -1,8 +1,9 @@
 from __future__ import annotations
 
 import asyncio
+from collections.abc import Awaitable, Callable
 from dataclasses import dataclass, field
-from typing import Awaitable, Callable, TypeVar
+from typing import TypeVar
 
 from android_crack.core.adb_client import AdbClient, AdbResult
 
@@ -40,7 +41,7 @@ class DevicePool:
         items: list[Device] = []
         for line in result.stdout.splitlines()[1:]:
             line = line.strip()
-            if not line or "\t" not in line and " " not in line:
+            if not line or ("\t" not in line and " " not in line):
                 continue
             parts = line.split()
             if len(parts) < 2:
